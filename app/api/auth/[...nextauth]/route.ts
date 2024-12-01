@@ -1,63 +1,60 @@
-import bcrypt from "bcrypt";
-import NextAuth, { AuthOptions } from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
-import GithubProvider from "next-auth/providers/github";
-import GoogleProvider from "next-auth/providers/google";
-import { PrismaAdapter } from "@next-auth/prisma-adapter";
+import bcrypt from 'bcrypt';
+import NextAuth, { AuthOptions } from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import GithubProvider from 'next-auth/providers/github';
+import GoogleProvider from 'next-auth/providers/google';
+import { PrismaAdapter } from '@next-auth/prisma-adapter';
 
-import prisma from "@/app/libs/prismadb";
+import prisma from '@/app/libs/prismadb';
 
 export const authOptions: AuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
     GithubProvider({
       clientId: process.env.GITHUB_ID as string,
-      clientSecret: process.env.GITHUB_SECRET as string
+      clientSecret: process.env.GITHUB_SECRET as string,
     }),
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID as string,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
     }),
     CredentialsProvider({
       name: 'credentails',
       credentials: {
         email: { label: 'email', type: 'text' },
-        password: { label: 'password', type: 'password' }
+        password: { label: 'password', type: 'password' },
       },
       async authorize(credentails) {
-        if(!credentails?.email || !credentails.password) {
+        if (!credentails?.email || !credentails.password) {
           throw new Error('Invalid Credentails');
         }
 
         const user = await prisma.user.findUnique({
           where: {
-            email: credentails.email
-          }
+            email: credentails.email,
+          },
         });
 
-        if(!user || !user?.hashedPassword) {
+        if (!user || !user?.hashedPassword) {
           throw new Error('Invalid credentails');
         }
 
-        const isCorrectPassword = await bcrypt.compare(
-          credentails.password,
-          user.hashedPassword
-        );
+        const isCorrectPassword = await bcrypt.compare(credentails.password, user.hashedPassword);
 
-        if(!isCorrectPassword) {
+        if (!isCorrectPassword) {
           throw new Error('Invalid credentails');
         }
 
         return user;
-      }
-    })
+      },
+    }),
   ],
   debug: process.env.NODE_ENV === 'development',
   session: {
-    strategy: "jwt",
+    strategy: 'jwt',
   },
   secret: process.env.NEXTAUTH_SECRET,
-}
+};
 
 const handler = NextAuth(authOptions);
 

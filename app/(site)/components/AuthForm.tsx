@@ -2,16 +2,27 @@
 
 import Button from '@/app/components/Button';
 import Input from '@/app/components/input/Input';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
 import AuthSocialButton from './AuthSocialButton';
 import { BsGithub, BsGoogle } from 'react-icons/bs';
 import axios from 'axios';
+import toast from 'react-hot-toast';
+import { signIn, useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 type Variant = 'LOGIN' | 'REGISTER';
 
 const AuthForm = () => {
+  const session = useSession();
+  const router = useRouter();
   const [varaint, setVariant] = useState<Variant>('LOGIN');
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (session?.status === 'authenticated') {
+      router.push('/users');
+    }
+  }, [session?.status, router]);
 
   const toggleVaraint = useCallback(() => {
     if (varaint === 'LOGIN') {
@@ -37,18 +48,46 @@ const AuthForm = () => {
     setIsLoading(true);
 
     if (varaint === 'REGISTER') {
-      axios.post('/api/register', data)
+      axios
+        .post('/api/register', data)
+        .then(() => signIn('credentials', data))
+        .catch(() => toast.error('Something went wrong'))
+        .finally(() => setIsLoading(false));
     }
 
     if (varaint === 'LOGIN') {
-      // NextAuth Sign In
+      signIn('credentials', {
+        ...data,
+        redirect: false,
+      })
+        .then((callback) => {
+          if (callback?.error) {
+            toast.error('Invalid email or password');
+          }
+
+          if (callback?.ok && !callback?.error) {
+            toast.success('Logged in !');
+            router.push('/users');
+          }
+        })
+        .finally(() => setIsLoading(false));
     }
   };
 
   const socialAction = (action: string) => {
     setIsLoading(true);
 
-    // NextAuth social Sign In
+    signIn(action, { redirect: false })
+      .then((callback) => {
+        if (callback?.error) {
+          toast.error('Invalid credentails');
+        }
+
+        if (callback?.ok && !callback?.error) {
+          toast.success('Logged in !');
+        }
+      })
+      .finally(() => setIsLoading(false));
   };
 
   return (
@@ -56,9 +95,22 @@ const AuthForm = () => {
       <div className="bg-white px-4 py-8 shadow sm:rounded-lg sm:px-10">
         <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
           {varaint === 'REGISTER' && (
-            <Input id="name" label="Name" register={register} errors={errors} disabled={isLoading} />
+            <Input
+              id="name"
+              label="Name"
+              register={register}
+              errors={errors}
+              disabled={isLoading}
+            />
           )}
-          <Input id="email" label="Email" type="email" register={register} errors={errors} disabled={isLoading} />
+          <Input
+            id="email"
+            label="Email"
+            type="email"
+            register={register}
+            errors={errors}
+            disabled={isLoading}
+          />
           <Input
             id="password"
             label="Password"
@@ -83,21 +135,13 @@ const AuthForm = () => {
             </div>
           </div>
           <div className="mt-6 flex gap-2">
-            <AuthSocialButton 
-              icon={BsGithub}
-              onClick={() => socialAction('github')}
-            />
-            <AuthSocialButton 
-              icon={BsGoogle}
-              onClick={() => socialAction('google')}
-            />
+            <AuthSocialButton icon={BsGithub} onClick={() => socialAction('github')} />
+            <AuthSocialButton icon={BsGoogle} onClick={() => socialAction('google')} />
           </div>
         </div>
-        <div className="flex gap-2 justify-center text-sm mt-6 px-2 text-gray-500">
-          <div>
-            {varaint === 'LOGIN' ? 'New to Messenger ?' : 'Already have an account ?'}
-          </div>
-          <div onClick={toggleVaraint} className="underline cursor-pointer">
+        <div className="mt-6 flex justify-center gap-2 px-2 text-sm text-gray-500">
+          <div>{varaint === 'LOGIN' ? 'New to Messenger ?' : 'Already have an account ?'}</div>
+          <div onClick={toggleVaraint} className="cursor-pointer underline">
             {varaint === 'LOGIN' ? 'Create an account' : 'Login'}
           </div>
         </div>
