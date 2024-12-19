@@ -1,29 +1,22 @@
-import getCurrentUser from "@/app/actions/getCurrentUser";
-import { NextResponse } from "next/server";
+import getCurrentUser from '@/app/actions/getCurrentUser';
+import { NextResponse } from 'next/server';
 import prisma from '@/app/libs/prismadb';
 
-export async function POST(
-  request: Request
-) {
+export async function POST(request: Request) {
   try {
     const currentUser = await getCurrentUser();
     const body = await request.json();
-    const { 
-      userId,
-      isGroup,
-      members,
-      name
-    } = body;
+    const { userId, isGroup, members, name } = body;
 
-    if(!currentUser?.id || !currentUser?.email) {
+    if (!currentUser?.id || !currentUser?.email) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    if(isGroup && (!members || members.length < 2 || !name)) {
+    if (isGroup && (!members || members.length < 2 || !name)) {
       return new NextResponse('Invalid data', { status: 400 });
     }
 
-    if(isGroup) {
+    if (isGroup) {
       const newConversations = await prisma.conversation.create({
         data: {
           name,
@@ -31,17 +24,17 @@ export async function POST(
           users: {
             connect: [
               ...members.map((member: { value: string }) => ({
-                id: member.value
+                id: member.value,
               })),
               {
-                id: currentUser.id
-              }
-            ]
-          }
+                id: currentUser.id,
+              },
+            ],
+          },
         },
         include: {
-          users: true
-        }
+          users: true,
+        },
       });
 
       return NextResponse.json(newConversations);
@@ -52,21 +45,21 @@ export async function POST(
         OR: [
           {
             userIds: {
-              equals: [currentUser.id, userId]
-            }
+              equals: [currentUser.id, userId],
+            },
           },
           {
             userIds: {
-              equals: [userId, currentUser.id]
-            }
-          }
-        ]
-      }
+              equals: [userId, currentUser.id],
+            },
+          },
+        ],
+      },
     });
 
     const singleConversation = existingConversations[0];
-    
-    if(singleConversation) {
+
+    if (singleConversation) {
       return NextResponse.json(singleConversation);
     }
 
@@ -75,17 +68,17 @@ export async function POST(
         users: {
           connect: [
             {
-              id: currentUser.id
+              id: currentUser.id,
             },
             {
-              id: userId
-            }
-          ]
-        }
+              id: userId,
+            },
+          ],
+        },
       },
       include: {
-        users: true
-      }
+        users: true,
+      },
     });
 
     return NextResponse.json(newConversation);

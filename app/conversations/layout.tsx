@@ -1,13 +1,8 @@
-import Sidebar from "@/app/components/sidebar/Sidebar"
-import ConversationList from "./components/ConversationList"
-import getConverstaions from "@/app/actions/getConversations"
+import Sidebar from '@/app/components/sidebar/Sidebar';
+import ConversationList from './components/ConversationList';
+import getConverstaions from '@/app/actions/getConversations';
 
-export default async function conversationLayout({
-  children
-}: {
-  children: React.ReactNode
-}) {
-
+export default async function conversationLayout({ children }: { children: React.ReactNode }) {
   const conversations = await getConverstaions();
 
   return (
@@ -17,5 +12,5 @@ export default async function conversationLayout({
         {children}
       </div>
     </Sidebar>
-  )
+  );
 }
