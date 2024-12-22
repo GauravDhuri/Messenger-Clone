@@ -1,12 +1,16 @@
 import getCurrentUser from '@/app/actions/getCurrentUser';
 import { pusherServer } from '@/app/libs/pusher';
 import { NextResponse } from 'next/server';
+import primsa from '@/app/libs/prismadb';
 
 interface IParams {
   conversationId?: string;
 }
 
-export async function DELETE({ params }: { params: IParams }) {
+export async function DELETE(
+  request: Request,
+  { params }: { params: IParams }
+) {
   try {
     const { conversationId } = params;
     const currentUser = await getCurrentUser();
@@ -14,7 +18,7 @@ export async function DELETE({ params }: { params: IParams }) {
     if (!currentUser?.id) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
-
+    
     const existingConversation = await prisma?.conversation.findUnique({
       where: {
         id: conversationId,
