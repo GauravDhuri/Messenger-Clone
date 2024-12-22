@@ -5,9 +5,9 @@ import Header from './components/Headers';
 import Body from './components/Body';
 import Form from './components/Form';
 
-interface IParams {
+type IParams = Promise<{
   conversationId: string;
-}
+}>
 
 const ConversationId = async ({ params }: { params: IParams }) => {
   const { conversationId } = await params;
