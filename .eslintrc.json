@@ -14,5 +14,7 @@
   },
   "rules": {
     // Add your custom ESLint rules here
+    "react/react-in-jsx-scope": "off",
+    "react/jsx-uses-react": "off"
   }
 }
